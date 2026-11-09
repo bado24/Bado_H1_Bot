@@ -1,0 +1,40 @@
+name: Deriv OB Bot
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: deriv-bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 358
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: bot-state-${{ github.run_id }}
+          restore-keys: bot-state-
+      - name: Lancer le bot
+        run: python deriv_ob_bot.py
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          DATA_DIR: data
+          RUN_MINUTES: "345"
+          TZ_OFFSET: "0"
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: data
+          key: bot-state-${{ github.run_id }}
